@@ -13,6 +13,10 @@ GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AWallRunCharacter::OnPla
 Функция обработки столкновения со стеной
 
 ```c++
+bool bIsWallRunning = false;
+EWallRunSide CurrentWallRunSide = EWallRunSide::None;
+FVector CurrentWallRunDirection = FVector::ZeroVector;
+
 void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	FVector HitNormal = Hit.ImpactNormal;
