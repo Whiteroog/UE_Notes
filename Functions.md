@@ -12,6 +12,14 @@ GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green, TEXT("Capsule hit!"));
 
 ----
 
+### Функция получения строки, используя параметры
+
+```c++
+FString::Printf(TEXT("%f > %f", SurfaceNormal.Z, GetCharacterMovement()))
+```
+
+----
+
 ### Функция создания объекта
 
 ```c++

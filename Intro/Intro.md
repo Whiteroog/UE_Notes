@@ -21,10 +21,10 @@ void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AA
 {
 	FVector HitNormal = Hit.ImpactNormal;
 
-	if (bIsWallRunning)
+	if (bIsWallRunning) // провекра на то что уже бежим
 		return;
 
-	if (!IsSurfaceWallRunnable(HitNormal))
+	if (!IsSurfaceWallRunnable(HitNormal)) // проверка на возможность пройти по стене. Если это не пол то дальше
 		return;
 
 	if (!GetCharacterMovement()->IsFalling())
@@ -41,6 +41,8 @@ void AWallRunCharacter::OnPlayerCapsuleHit(UPrimitiveComponent* HitComponent, AA
 }
 ```
 
+`Hit.ImpactNormal` - нормаль вектора. Вектор перпендикулярный плоскости. Стоя на равной поверхности это: x: 0, y: 0, z: 1
+
 ## Фильтрация столкновений
 
 Функция определяющая подходящую стену
@@ -54,6 +56,23 @@ bool AWallRunCharacter::IsSurfaceWallRunnable(const FVector& SurfaceNormal) cons
 	return true;
 }
 ```
+
+`GetCharacterMovement()->GetWalkableFloorAngle()` - возвращает угол по которому можно ходить. Настраивается в редакторе и равен 44,7
+
+Скалярное произведение векторов = Cos угла между ними. Чтобы получить угол на который игрок опирается надо сделать следующиее: умножить вектор-нормали на который игрок столкнулся HitNormal на единичный вектор-Z
+
+```c++
+float SlopeCosine = FVector::DotProduct(FVector::UpVector, HitNormal);
+float SlopeAngle = FMath::RadiansToDegrees(FMath::Acos(SlopeCosine));
+```
+
+Однако, умножение в данном случае лишнее, так как в любом случае получим компонент-Z
+
+```c++
+float SlopeAngle = FMath::RadiansToDegrees(FMath::Acos(HitNormal.Z));
+```
+
+`SurfaceNormal.Z` пола = 1, стены = 0, если наклонена влево, то правая сторона положительная левая отрицательная
 
 ## Определение стороны столкновения
 
@@ -86,6 +105,16 @@ void AWallRunCharacter::GetWallSideAndDirection(const FVector HitNormal, EWallRu
 	}
 }
 ```
+
+Если ударится левым плечом, то вектор право стены и игрока будут смотреть враво положительно, если правым плечом, то вектор стены будет смотреть влевую сторону и при умножении будет отрицательное число
+
+`CrossProduct` - получение нового вектора из результата векторного производения с тонко придуманными правилами. Чтобы получить нужное направление вектора надо использовать правило левой руки (если используется левая система векторов, если правая то правая).
+
+В чем суть:
+
+Большой палец левой руки указывает на направление нового вектора при умножении. Но чтобы правильно получить вектор надо использовать специальное направленное векторное умножение. Т.е. направление пальцев указывает направление умножения, а указательный и средний палец указывает на направление оставшихся двух векторов.
+
+![CrossProduct](Images/CrossProduct.png "Векторное умножение")
 
 ## Проверка на условие старта механики
 
@@ -125,10 +154,10 @@ bool AWallRunCharacter::AreRequiredKeysDown(EWallRunSide Side) const
 	if (ForwardAxis < 0.1f)
 		return false;
 
-	if (Side == EWallRunSide::Right && RightAxis < -0.1f)
+	if (Side == EWallRunSide::Right && RightAxis < -0.1f) // если была нажата клавиша влево то прекратить
 		return false;
 
-	if (Side == EWallRunSide::Left && RightAxis > 0.1f)
+	if (Side == EWallRunSide::Left && RightAxis > 0.1f) // если была нажата клавиша враво то прекратить
 		return false;
 
 	return true;
@@ -148,7 +177,7 @@ void AWallRunCharacter::StartWallRun(EWallRunSide Side, const FVector& Direction
 	CurrentWallRunSide = Side;
 	CurrentWallRunDirection = Direction;
 
-	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::UpVector);
+	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::UpVector); // задает перемещение только в ограниченной плоскости, в данном случае плоскость XY, плоскотсь задется в соответствии перпендикуляра вектора, здесь он задан перпендикуляр нормали Z
 
 	GetWorld()->GetTimerManager().SetTimer(WallRunTimer, this, &AWallRunCharacter::StopWallRun, MaxWallRunTimer, false);
 }
@@ -194,10 +223,9 @@ void AWallRunCharacter::UpdateWallRun()
 		return;
 	}
 
-
 	FHitResult HitResult;
 
-	FVector LineTraceDirection = CurrentWallRunSide == EWallRunSide::Right ? GetActorRightVector() : -GetActorRightVector();
+	FVector LineTraceDirection = CurrentWallRunSide == EWallRunSide::Right ? GetActorRightVector() : -GetActorRightVector(); // если стена слева то пустить лучь влево: вектор -вправо
 	float LineTraceLength = 200.0f;
 
 	FVector StartPosition = GetActorLocation();
