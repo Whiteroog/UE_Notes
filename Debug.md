@@ -36,3 +36,19 @@ GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("
 `1.0f` - время удержания информации
 
 `FString::Printf(TEXT(), args..)` - создает строку с параметрами
+
+## Собственное логирование
+
+В файле .h с названием проекта (FirstProject.h) создается своя категория логирования, с праметрами
+
+```c++
+DECLARE_LOG_CATEGORY_EXTERN(LogCameras, Log, All)
+```
+
+В файле .cpp с навзанием проекта (FirstProject.cpp) объявляется эта категория логирования
+
+```c++
+DEFINE_LOG_CATEGORY(LogCameras)
+```
+
+Потом, эту категорию можно применять
